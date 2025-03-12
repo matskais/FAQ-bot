@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAQボット</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+        }
+
+        .faq-bot {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+
+        .chat-container {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: white;
+        }
+
+        .message {
+            margin-bottom: 10px;
+            padding: 8px 12px;
+            border-radius: 18px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .user-message {
+            background-color: #e1f5fe;
+            margin-left: auto;
+            border-bottom-right-radius: 5px;
+        }
+
+        .bot-message {
+            background-color: #f1f1f1;
+            margin-right: auto;
+            border-bottom-left-radius: 5px;
+        }
+
+        .input-container {
+            display: flex;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 10px;
+            font-size: 16px;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        .footer {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 0.8em;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h1>FAQボット</h1>
+    
+    <div class="faq-bot">
+        <div class="chat-container" id="chatContainer">
+            <div class="message bot-message">こんにちは！質問があればお気軽にどうぞ。</div>
+        </div>
+        <div class="input-container">
+            <input type="text" id="userInput" placeholder="質問を入力してください...">
+            <button onclick="sendMessage()">送信</button>
+        </div>
+    </div>
+
+    <script>
+        // FAQデータの取得
+        let faqData = [];
+        
+        // ページ読み込み時にローカルストレージからFAQデータを読み込む
+        document.addEventListener('DOMContentLoaded', function() {
+            const storedData = localStorage.getItem('faqBotData');
+            if (storedData) {
+                try {
+                    faqData = JSON.parse(storedData);
+                } catch (e) {
+                    console.error('保存されたデータの解析エラー:', e);
+                    // 初期データの設定
+                    setDefaultData();
+                }
+            } else {
+                // 初期データの設定
+                setDefaultData();
+            }
+        });
+
+        // 初期データ設定
+        function setDefaultData() {
+            faqData = [
+                {
+                    question: "このサービスについて教えてください",
+                    answer: "これはFAQボットです。お客様からのよくある質問に自動で回答します。"
+                },
+                {
+                    question: "営業時間はいつですか",
+                    answer: "平日の9時から17時まで営業しています。土日祝日はお休みです。"
+                },
+                {
+                    question: "返品ポリシーを知りたいです",
+                    answer: "商品到着後7日以内であれば、未使用品に限り返品可能です。カスタマーサービスまでご連絡ください。"
+                }
+            ];
+        }
+
+        // メッセージ送信処理
+        function sendMessage() {
+            const userInput = document.getElementById('userInput');
+            const chatContainer = document.getElementById('chatContainer');
+            const userQuery = userInput.value.trim();
+            
+            if (userQuery === '') return;
+            
+            // ユーザーのメッセージを表示
+            const userMessageDiv = document.createElement('div');
+            userMessageDiv.className = 'message user-message';
+            userMessageDiv.textContent = userQuery;
+            chatContainer.appendChild(userMessageDiv);
+            
+            // 回答を検索
+            setTimeout(() => {
+                const botMessageDiv = document.createElement('div');
+                botMessageDiv.className = 'message bot-message';
+                
+                // FAQ内で質問を検索
+                const matchedFaq = findMatchingFaq(userQuery);
+                
+                if (matchedFaq) {
+                    botMessageDiv.textContent = matchedFaq.answer;
+                } else {
+                    botMessageDiv.textContent = "申し訳ありませんが、その質問についての情報はありません。別の質問をお試しください。";
+                }
+                
+                chatContainer.appendChild(botMessageDiv);
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }, 500);
+            
+            // 入力フィールドをクリア
+            userInput.value = '';
+        }
+
+        // FAQで一致するものを検索
+        function findMatchingFaq(query) {
+            query = query.toLowerCase();
+            
+            // 完全一致または部分一致を探す
+            for (const faq of faqData) {
+                if (faq.question.toLowerCase() === query) {
+                    return faq; // 完全一致
+                }
+            }
+            
+            // キーワードマッチング
+            for (const faq of faqData) {
+                if (faq.question.toLowerCase().includes(query) || 
+                    query.includes(faq.question.toLowerCase())) {
+                    return faq;
+                }
+            }
+            
+            return null; // 一致するものがない
+        }
+
+        // Enterキーで送信
+        document.getElementById('userInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    </script>
+</body>
+</html>
